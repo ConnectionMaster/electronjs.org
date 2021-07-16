@@ -8,7 +8,7 @@ const nock = require('nock')
 const cheerio = require('cheerio')
 const chai = require('chai')
 const i18n = require('../lib/i18n')
-chai.should()
+const should = chai.should()
 chai.use(require('chai-cheerio'))
 const app = require('../server.js')
 
@@ -97,7 +97,7 @@ describe('electronjs.org', () => {
     test('displays Code of Conduct link in the footer', async () => {
       const $ = await get('/')
       $(
-        'a.footer-nav-item[href="https://github.com/electron/electron/tree/master/CODE_OF_CONDUCT.md"]'
+        'a.footer-nav-item[href="https://github.com/electron/electron/tree/main/CODE_OF_CONDUCT.md"]'
       )
         .text()
         .should.eq('Code of Conduct')
@@ -106,7 +106,7 @@ describe('electronjs.org', () => {
     test('displays Security link in the footer', async () => {
       const $ = await get('/')
       $(
-        'a.footer-nav-item[href="https://github.com/electron/electron/tree/master/SECURITY.md"]'
+        'a.footer-nav-item[href="https://github.com/electron/electron/tree/main/SECURITY.md"]'
       )
         .text()
         .should.eq('Security')
@@ -115,7 +115,7 @@ describe('electronjs.org', () => {
     test('displays License link in the footer', async () => {
       const $ = await get('/')
       $(
-        'a.footer-nav-item[href="https://github.com/electron/electron/tree/master/LICENSE"]'
+        'a.footer-nav-item[href="https://github.com/electron/electron/tree/main/LICENSE"]'
       )
         .text()
         .should.eq('License')
@@ -193,9 +193,7 @@ describe('electronjs.org', () => {
     test('index', async () => {
       const $ = await get('/docs')
       $('header').should.have.class('site-header')
-      $('a[href="/docs/tutorial/quick-start"]').should.have.text(
-        'Quick Start Guide'
-      )
+      $('a[href="/docs/tutorial/quick-start"]').should.have.text('Quick Start')
       $('a[href="/docs/api/auto-updater"]').should.have.text('autoUpdater')
     })
 
@@ -254,17 +252,6 @@ describe('electronjs.org', () => {
         .should.eq('Create and control browser windows.')
     })
 
-    test('docs/all', async () => {
-      const $ = await get('/docs/all')
-      $('head > title').text().should.eq('All the Electron Docs! | Electron')
-      const titles = $('h1')
-        .map((i, el) => $(el).text())
-        .get()
-      titles.should.include('BluetoothDevice Object') // API Structures
-      titles.should.include('BrowserWindow') // API Docs
-      titles.should.include('Application Distribution') // Tutorials
-    })
-
     test('docs/api', async () => {
       const $ = await get('/docs/api')
       $('tr').length.should.be.above(10)
@@ -290,14 +277,14 @@ describe('electronjs.org', () => {
       res.statusCode.should.equal(404)
     })
 
-    describe('docs footer', () => {
+    describe('docs actions', () => {
       test('includes a link to edit the doc on GitHub', async () => {
         const $ = await get('/docs/api/accelerator')
-        $('.propose-change')
-          .attr('href')
-          .should.eq(
-            'https://github.com/electron/electron/tree/master/docs/api/accelerator.md'
+        should.exist(
+          $(
+            '[href="https://github.com/electron/electron/tree/main/docs/api/accelerator.md"]'
           )
+        )
       })
 
       test('includes a link to translate the doc on Crowdin', async () => {
@@ -305,9 +292,9 @@ describe('electronjs.org', () => {
           .get('/docs/api/accelerator')
           .set('Cookie', ['language=zh-CN'])
         const $ = cheerio.load(res.text)
-        $('.translate-on-crowdin')
-          .attr('href')
-          .should.eq('https://crowdin.com/translate/electron/63/en-zhcn')
+        should.exist(
+          $('[href="https://crowdin.com/translate/electron/250480/en-zhcn"]')
+        )
       })
 
       test('includes a link to translate the doc on Crowdin for French', async () => {
@@ -315,9 +302,9 @@ describe('electronjs.org', () => {
           .get('/docs/api/crash-reporter')
           .set('Cookie', ['language=fr-FR'])
         const $ = cheerio.load(res.text)
-        $('.translate-on-crowdin')
-          .attr('href')
-          .should.eq('https://crowdin.com/translate/electron/74/en-fr')
+        should.exist(
+          $('[href="https://crowdin.com/translate/electron/250506/en-fr"]')
+        )
       })
 
       test('includes a link to Crowdin language picker when language is English', async () => {
@@ -327,9 +314,9 @@ describe('electronjs.org', () => {
           .get('/docs/api/browser-view')
           .set('Cookie', ['language=en-US'])
         const $ = cheerio.load(res.text)
-        $('.translate-on-crowdin')
-          .attr('href')
-          .should.eq('https://crowdin.com/translate/electron/66/en-en')
+        should.exist(
+          $('[href="https://crowdin.com/translate/electron/250486/en-en"]')
+        )
       })
 
       test('includes a link to view doc history', async () => {
@@ -341,7 +328,7 @@ describe('electronjs.org', () => {
     })
   })
 
-  describe('language toggle on docs', () => {
+  describe.skip('language toggle on docs', () => {
     test('each localized documentation section should have an corresponding english section', async () => {
       const res = await supertest(app)
         .get('/docs/tutorial/desktop-environment-integration')
@@ -367,16 +354,6 @@ describe('electronjs.org', () => {
       $('.docs .sub-section[data-lang="en-US"]').each((i, elem) => {
         $(elem).should.have.class('hidden')
       })
-    })
-
-    test('docs/all should not load any english section', async () => {
-      const res = await supertest(app)
-        .get('/docs/all')
-        .set('Cookie', ['language=zh-CN'])
-      const $ = cheerio.load(res.text)
-      $('.docs .sub-section[data-lang="zh-CN"]').length.should.be.above(0)
-      $('.docs .sub-section[data-lang="en-US"]').length.should.equal(0)
-      $('.docs button.en-toggle').length.should.equal(0)
     })
   })
 
